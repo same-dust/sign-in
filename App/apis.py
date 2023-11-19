@@ -81,9 +81,16 @@ class linkResource(Resource):
                 new_ct_s=CourseTeacher_Student(student_id=stu_id,course_teacher_id=ct_id) 
                 db.session.add(new_ct_s)
                 db.session.commit()
-            else:
+            else: # 不存在就添加这个学生的信息到数据库
+                new_student=Student(stu_no=stu_no,stu_name=item.get('姓名'))
+                db.session.add(new_student)
+                db.session.commit()
+                stu_id=new_student.id
+                new_ct_s=CourseTeacher_Student(student_id=stu_id,course_teacher_id=ct_id)
+                db.session.add(new_ct_s)
+                db.session.commit()
                 flag=False # 有学生没有关联上（数据库不存在此学生）
-                msg.append(f'数据库中没有存储学号为{stu_no}的学生')
+                msg.append(f'数据库中没有存储学号为{stu_no}的学生,现已存入,班级未知')
 
         if flag:
             msg.append('所有学生信息导入成功')
@@ -99,9 +106,27 @@ class rosterForTeacher(Resource):
             stu=Student.query.filter_by(id=ct_stu.student_id).first()
             stu_informations.append({'stu_no':stu.stu_no,'stu_name':stu.name})
         return {'stu_informations':stu_informations}
+    
+    def post(self): # 点完名后，需要传入课程id，缺勤学生名单（含学号），日期，更新缺勤信息，缺勤次数加一，缺勤表添加一条数据：学生id，课程教师id，缺勤日期
+        pass
 
 
-class renderCourse(Resource):
+class renderHomeCourse(Resource):
+    def get(self):
+        user_id=request.args.get('user_id')# 把用户的id传入进来
+        week=request.args.get('week') # 周几
+        cts=CourseTeacher.query.filter_by(user_id=user_id).all()
+        informations=list() # 存储课程相关信息，例如：课程名，上课的时间和地点
+        for ct in cts:
+            tp_id=Scheduling.query.filter_by(course_teacher_id=ct.id).first().time_place_id
+            tp=TimePlace.query.filter_by(id=tp_id).first()
+            if tp.week_name!=week:  # 只返回指定时间(周几)的课程
+                continue
+            information={'course_id':ct.id,'course':ct.course,'building':tp.building,'classroom':tp.classroom,'week':tp.week_name,'time_period':tp.time_period}
+            informations.append(information)
+        return {'Course_informations':informations}
+    
+class renderMineCourse(Resource):
     def get(self):
         user_id=request.args.get('user_id')# 把用户的id传入进来
         cts=CourseTeacher.query.filter_by(user_id=user_id).all()
@@ -111,7 +136,28 @@ class renderCourse(Resource):
             tp=TimePlace.query.filter_by(id=tp_id).first()
             information={'course_id':ct.id,'course':ct.course,'building':tp.building,'classroom':tp.classroom,'week':tp.week_name,'time_period':tp.time_period}
             informations.append(information)
-        return {'Course-informations':informations}
+        return {'Course_informations':informations}
+    
+class courseAbsences(Resource):
+    def get(self):
+        ct_id=request.args.get('course_id')
+        ct_stus=CourseTeacher_Student.query.filter_by(course_teacher_id=ct_id).all()
+        stu_absences=list()
+        for ct_stu in ct_stus:
+            if ct_stu.absence_count==0: # 缺勤为0则跳过该名学生
+                continue
+            stu=Student.query.filter_by(id=ct_stu.student_id).first() 
+            details=Absence_Details.query.filter_by(ct_s_id=ct_stu.id).all()
+            dates=list()
+            for detail in details:
+                dates.append(detail.Specific_dates)
+
+            stu_absence={'student_number':stu.stu_no,'student_name':stu.name,'absence-count':ct_stu.absence_count,'details':dates}
+            stu_absences.append(stu_absence)
+        return {'Student_absences':stu_absences}
+
+    
+
     
     
     

@@ -1,12 +1,21 @@
 from .exts import db
 
 
+class Absence_Details(db.Model):
+    __tablename__ = 'absence_details'
+    id = db.Column(db.Integer, primary_key=True, comment='Primary Key')
+    Specific_dates = db.Column(db.String(42), nullable=False, comment='具体日期')
+    ct_s_id = db.Column(db.Integer, db.ForeignKey('courseteacher_student.id'), nullable=False, comment='外键,关联学生选课表的id')
+
+
+
 class CourseTeacher_Student(db.Model):
     __tablename__ = 'courseteacher_student'
     id = db.Column(db.Integer, primary_key=True)
     absence_count = db.Column(db.Integer)
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
     course_teacher_id = db.Column(db.Integer, db.ForeignKey('courseteacher.id'))
+    absence_details = db.relationship('Absence_Details', backref='courseteacher_student', lazy=True)
 
 class Scheduling(db.Model):
     __tablename__ = 'scheduling'
