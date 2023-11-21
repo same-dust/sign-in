@@ -12,7 +12,7 @@ class Absence_Details(db.Model):
 class CourseTeacher_Student(db.Model):
     __tablename__ = 'courseteacher_student'
     id = db.Column(db.Integer, primary_key=True)
-    absence_count = db.Column(db.Integer)
+    absence_count = db.Column(db.Integer,default=0)
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
     course_teacher_id = db.Column(db.Integer, db.ForeignKey('courseteacher.id'))
     absence_details = db.relationship('Absence_Details', backref='courseteacher_student', lazy=True)
@@ -41,7 +41,7 @@ class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     name = db.Column(db.String(30))
     stu_no=db.Column(db.String(20),unique=True)
-    Absence=db.Column(db.Integer)
+    Absence=db.Column(db.Integer,default=0)
     # 外键：跟Grade表中的id字段关联
     grade_id = db.Column(db.Integer, db.ForeignKey(Grade.id))
 

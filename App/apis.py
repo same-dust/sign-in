@@ -20,7 +20,6 @@ class loginResource(Resource):
                 print(2)
                 return {'msg': '用户名或密码错误','status':'fail'}
         else: # 用户不存在，即第一次登录，将把信息存入数据库
-            
             new_user = User(username=data['username'],userpwd=data['password'],user_type=data['type'])
             db.session.add(new_user)
             db.session.commit()
@@ -40,18 +39,26 @@ class linkResource(Resource):
     def post(self):
         data=request.get_json()
         # print(data)
-        print(type(data)) # <class 'dict'>
+        # # print(type(data)) # <class 'dict'>
         user_id=data.get('id') # 获取用户id，与课程老师表关联
-        teacher=data.get('teachername') # 老师姓名
-        course=data.get('classname') # 课程名，可重复，ke班软工!=cheng班软工
-        classroom=data.get('classroom') # 教室 eg：东三305
+        print(user_id)
+        building=data.get('building') # 教学楼,eg:东三
         week=data.get('time1') # 周几，eg：周五
         time_period=data.get('time2') # 时间段，eg：一二节
-        print(type(classroom)) # <class 'str'>
-        building=classroom[0:2]
-        classroom=classroom[2:]
+        classroom=data.get('classroom') # 教室 eg：305
         # print(building)
+        # print(week)
+        # print(time_period)
         # print(classroom)
+        jsonData = data.get('jsonData')
+        # print(type(jsonData)) # <class 'str'>
+        data=json.loads(jsonData)
+        print(data)
+        course=data.get('课程名称')
+        teacher=data.get('任课教师')
+        stu_roster=data.get('学生名单')
+        print(course)
+        print(teacher)
         new_ct=CourseTeacher(teacher=teacher,course=course,user_id=user_id) # 创建课程教师对象
         new_tp=TimePlace(building=building,classroom=classroom,week_name=week,time_period=time_period) # 创建时间地点对象
         db.session.add(new_ct)
@@ -67,35 +74,26 @@ class linkResource(Resource):
         db.session.add(new_scheduling)
         db.session.commit()
 
-        jsonData = data.get('jsonData')
-        # print(type(jsonData)) # <class 'str'>
-        Data = json.loads(jsonData).get('Sheet1')
-        # print(type(Data)) # <class 'list'>
-        msg=list() # 空列表，用于返回消息
-        flag=True
-        for item in Data: # 每个学生的学号与姓名
-            stu_no=item.get('学号')
-            student=Student.query.filter_by(stu_no=stu_no).first() # 找寻对应学号的学生
+        for stu in stu_roster:
+            print(stu.get('学号'))
+            print(stu.get('姓名'))
+            student=Student.query.filter_by(stu_no=stu.get('学号')).first()
             if student: # 如果该学生存在,拿到其id与课程老师表通过学生选课表进行绑定
                 stu_id=student.id
                 new_ct_s=CourseTeacher_Student(student_id=stu_id,course_teacher_id=ct_id) 
                 db.session.add(new_ct_s)
                 db.session.commit()
             else: # 不存在就添加这个学生的信息到数据库
-                new_student=Student(stu_no=stu_no,stu_name=item.get('姓名'))
+                new_student=Student(stu_no=stu.get('学号'),name=stu.get('姓名'))
                 db.session.add(new_student)
                 db.session.commit()
                 stu_id=new_student.id
                 new_ct_s=CourseTeacher_Student(student_id=stu_id,course_teacher_id=ct_id)
                 db.session.add(new_ct_s)
                 db.session.commit()
-                flag=False # 有学生没有关联上（数据库不存在此学生）
-                msg.append(f'数据库中没有存储学号为{stu_no}的学生,现已存入,班级未知')
+        
+        return {'course_id':ct_id,'msg':'课程创建成功'}
 
-        if flag:
-            msg.append('所有学生信息导入成功')
-            return {'msg':msg,'course_id':ct_id}
-        return {'msg':msg,'course_id':ct_id}
         
 class rosterForTeacher(Resource):
     def get(self):
@@ -107,8 +105,35 @@ class rosterForTeacher(Resource):
             stu_informations.append({'stu_no':stu.stu_no,'stu_name':stu.name})
         return {'stu_informations':stu_informations}
     
-    def post(self): # 点完名后，需要传入课程id，缺勤学生名单（含学号），日期，更新缺勤信息，缺勤次数加一，缺勤表添加一条数据：学生id，课程教师id，缺勤日期
-        pass
+    def post(self): # 点完名后，需要传入课程id，缺勤学生名单（含学号），日期，更新缺勤信息，缺勤次数加一，缺勤表添加一条数据：缺勤日期，学生选课表id
+        data=request.get_json()
+        print(data)
+        ct_id=data.get('course_id') # 获取课程id
+        stu_list=data.get('stu_list') # 获取缺勤名单
+        date=data.get('date') # 获取当前日期:yyyy-mm-dd 格式
+        msg=list()
+        flag=True
+        for stu in stu_list:
+            stu_no=stu.get('学号')
+            student=Student.query.filter_by(stu_no=stu_no).first() # 找到该名学生
+            if student:
+                stu_id=student.id # 获取学生id
+                ct_stu=CourseTeacher_Student.query.filter_by(course_teacher_id=ct_id,student_id=stu_id).first()
+                if ct_stu:
+                    ct_stu.absence_count+=1 # 该名学生本课程缺勤次数加1
+                    new_ad=Absence_Details(Specific_dates=date,ct_s_id=ct_stu.id) # 在缺勤详情表添加一条数据，记录每次缺勤的日期
+                    db.session.add(new_ad)
+                    db.session.commit()
+                else:
+                    msg.append('学号为'+stu_no+'的学生不在该课程中')
+                    flag=False
+            else:
+                msg.append('学号为'+stu_no+'的学生不存在')
+                flag=False
+        if flag:
+            return {'msg':'缺勤信息已经成功导入'}
+        return {'msg':msg}
+
 
 
 class renderHomeCourse(Resource):
@@ -152,148 +177,8 @@ class courseAbsences(Resource):
             for detail in details:
                 dates.append(detail.Specific_dates)
 
-            stu_absence={'student_number':stu.stu_no,'student_name':stu.name,'absence-count':ct_stu.absence_count,'details':dates}
+            stu_absence={'student_number':stu.stu_no,'student_name':stu.name,'absence_count':ct_stu.absence_count,'details':dates}
             stu_absences.append(stu_absence)
         return {'Student_absences':stu_absences}
-
-    
-
-    
-    
-    
-    
-    # def post(self):
-    #     data = request.get_json()
-
-    #     # 获取用户输入的 classname
-    #     classname = data.get('name')
-
-    #     # 创建一个新的 Grade 对象并将其添加到数据库
-    #     new_grade = Grade(name=classname)
-    #     db.session.add(new_grade)
-    #     db.session.commit()
-
-    #     return jsonify({'msg': 'post请求', 'data': {'classname': classname}})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # 类视图： CBV   Class Based View
-# # 视图函数： FBV  Function Based View
-# class HelloResouce(Resource):
-#     def get(self):
-#         return jsonify({'msg': 'get请求'})
-
-#     def post(self):
-#         return jsonify({'msg': 'post请求'})
-
-# # --------------------------- 字段格式化 --------------------------- #
-
-# # Flask-RESTful
-# # 字段格式化：定义返回给前端的数据格式
-# ret_fields = {
-#     'status': fields.Integer,
-#     'msg': fields.String,
-#     # 'data': fields.String,
-#     'like': fields.String(default='ball'),
-#     'like2': fields.String(),
-#     'data2': fields.String(attribute='data')  # 使用data的值
-# }
-
-# class UserResource(Resource):
-#     @marshal_with(ret_fields)
-#     def get(self):
-#         return {
-#             'status': 1,
-#             'msg': 'ok',
-#             'data': '千锋教育Python'
-#         }
-
-
-# # --------------------------- 字段格式化 --------------------------- #
-
-# #
-# user_fields = {
-#     # 'id': fields.Integer,
-#     'name': fields.String,
-#     'age': fields.Integer,
-#     # 绝对路径
-#     'url': fields.Url(endpoint='id', absolute=True)
-# }
-# ret_fields2 = {
-#     'status': fields.Integer,
-#     'msg': fields.String,
-#     # user对象
-#     'data': fields.Nested(user_fields)
-# }
-
-# class User2Resource(Resource):
-#     @marshal_with(ret_fields2)
-#     def get(self):
-#         user = User.query.first()
-#         return {
-#             'status': 1,
-#             'msg': 'ok',
-#             'data': user
-#         }
-
-# # --------------------------- 字段格式化 --------------------------- #
-# user_fields2 = {
-#     'name': fields.String,
-#     'age': fields.Integer,
-# }
-# ret_fields3 = {
-#     'status': fields.Integer,
-#     'msg': fields.String,
-#     'data': fields.List(fields.Nested(user_fields2))
-# }
-
-# class User3Resource(Resource):
-#     @marshal_with(ret_fields3)
-#     def get(self):
-#         users = User.query.all()
-#         return {
-#             'status': 1,
-#             'msg': 'ok',
-#             'data': users
-#         }
-
-
-# # --------------------------- 参数解析 --------------------------- #
-# # 参数解析：解析前端发送过来的数据
-# parser = reqparse.RequestParser()
-# parser.add_argument('name', type=str, required=True, help='name是必需的参数')
-# parser.add_argument('age', type=int, action='append')  # 可以有多个age
-# parser.add_argument('key', type=str, location='cookies')  # 可以有多个age
-
-# class User4Resource(Resource):
-#     def get(self):
-#         # 获取参数
-#         args = parser.parse_args()
-#         name = args.get('name')
-#         age = args.get('age')
-#         key = args.get('key')
-
-#         return jsonify({"name": name, 'age': age, 'key': key})
-
 
 
