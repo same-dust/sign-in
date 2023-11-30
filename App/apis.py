@@ -296,3 +296,6 @@ class TodayAbsencePush(Resource):
         return {'status':'success','today_absence':today_absence}
 
 
+class test(Resource):
+    def get(self):
+        return 'success'
