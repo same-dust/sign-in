@@ -14,7 +14,7 @@ sleep 0.5
 
 echo -e '\n----------check if the kill action is correct----------'
 
-/envs/nb/bin/uwsgi  --ini  nb_uwsgi.ini &  >/dev/null
+/envs/sign-in/bin/uwsgi  --ini  nb_uwsgi.ini &  >/dev/null
 
 echo -e '\n\033[42;1m----------------------started...----------------------\033[0m'
 sleep 1
