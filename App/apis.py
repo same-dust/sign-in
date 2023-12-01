@@ -145,7 +145,7 @@ class rosterForTeacher(Resource):
         print(data)
         ct_id=data.get('course_id') # 获取课程id
         stu_list=data.get('stu_list') # 获取缺勤名单
-        # leave_list=data.get('leave_list') # 获取请假名单
+        leave_list=data.get('leave_list') # 获取请假名单
         date=data.get('date') # 获取当前日期:yyyy-mm-dd 格式
         place=data.get('place') # 缺勤地点：东三305
         ab_time=data.get('time') # 缺勤时间：周五三四节
@@ -153,15 +153,15 @@ class rosterForTeacher(Resource):
         msg=list()
         flag=True
 
-        # for leave in leave_list:
-        #     leave_stu_no=leave.get('学号')
-        #     student=Student.query.filter_by(stu_no=leave_stu_no).first() # 找到该名学生
-        #     if student:
-        #         new_lea_msg=Leave_msg(leave_date=date,student_id=student.id,course_id=ct_id) # 将请假消息添加到数据库中
-        #         db.session.add(new_lea_msg)
-        #         db.session.commit()
-        #     else:
-        #         msg.append('学号为'+leave_stu_no+'的学生不存在')
+        for leave in leave_list:
+            leave_stu_no=leave.get('学号')
+            student=Student.query.filter_by(stu_no=leave_stu_no).first() # 找到该名学生
+            if student:
+                new_lea_msg=Leave_msg(leave_date=date,student_id=student.id,course_id=ct_id) # 将请假消息添加到数据库中
+                db.session.add(new_lea_msg)
+                db.session.commit()
+            else:
+                msg.append('学号为'+leave_stu_no+'的学生不存在')
 
         usertype=data.get('usertype') # int型，0是教师
         for stu in stu_list:
