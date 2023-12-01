@@ -53,12 +53,6 @@ class Grade(db.Model):
     name = db.Column(db.String(30),unique=True)
     admission_year=db.Column(db.String(11),nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    # 建立关联
-    #   第1个参数：关联的模型名（表）
-    #   第2个参数：反向引用的名称，grade对象，
-    #             让student去反过来得到grade对象的名称： student.grade
-    #   第3个参数：懒加载
-    # 这里的students不是字段
     students = db.relationship('Student', backref='grade', lazy=True)
 
 class Student(db.Model):
