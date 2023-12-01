@@ -298,4 +298,4 @@ class TodayAbsencePush(Resource):
 
 class test(Resource):
     def get(self):
-        return 'success'
+        return '请说谢谢吴老师'
