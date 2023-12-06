@@ -12,8 +12,8 @@ api.add_resource(renderHomeCourse,'/apis/tHome/') # 老师首页显示的课程(
 api.add_resource(renderMineCourse,'/apis/tMine/') # 老师我的显示的课程，所有课程
 api.add_resource(rosterForTeacher,'/apis/cRoster/') # 课程的花名册
 api.add_resource(courseAbsences,'/apis/cAbsencesForT/') # 老师端的基于课程的缺勤名单
+api.add_resource(GradeAbsences,'/apis/gAbsenceForC/') # 辅导员端基于自然班的缺勤名单
 api.add_resource(leaveResource,'/apis/leave/') # 请假消息消息的推送与确认
 api.add_resource(TodayAbsencePush,'/apis/absencePush/') # 缺勤消息推送
-api.add_resource(test,'/apis/test/')
 
 

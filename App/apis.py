@@ -296,6 +296,18 @@ class TodayAbsencePush(Resource):
         return {'status':'success','today_absence':today_absence}
 
 
-class test(Resource):
+class GradeAbsences(Resource):
     def get(self):
-        return '请说谢谢吴老师'
+        grade_id=request.args.get('id') # 获取班级id
+        students=Student.query.filter_by(grade_id=grade_id).all() # 获取该自然班所有学生
+        grade_absence=list()  
+        for student in students:
+            if not student.Absence:
+                continue
+            absence_detail=list()
+            student_absences=StudentAbsences.query.filter_by(student_id=student.id).all()
+            for absence in student_absences:
+                ct=CourseTeacher.query.filter_by(id=absence.course_id).first()
+                absence_detail.append({'date':absence.ab_date,'course':ct.course,'place':absence.place})
+            grade_absence.append({'student_name':student.name,'student_no':student.stu_no,'absence_count':student.Absence,'absence_detail':absence_detail})
+        return {'status':'success','grade_absence':grade_absence}
