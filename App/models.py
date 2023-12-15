@@ -3,7 +3,7 @@ from .exts import db
 
 class Absence_Details(db.Model):
     __tablename__ = 'absence_details'
-    id = db.Column(db.Integer, primary_key=True, comment='Primary Key')
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True,comment='Primary Key')
     Specific_dates = db.Column(db.String(42), nullable=False, comment='具体日期')
     ct_s_id = db.Column(db.Integer, db.ForeignKey('courseteacher_student.id'), nullable=False, comment='外键,关联学生选课表的id')
 
@@ -31,7 +31,7 @@ class CourseTeacher_Student(db.Model):
 
 class Scheduling(db.Model):
     __tablename__ = 'scheduling'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     time_place_id = db.Column(db.Integer, db.ForeignKey('timeplace.id'))
     course_teacher_id = db.Column(db.Integer, db.ForeignKey('courseteacher.id'))
 
