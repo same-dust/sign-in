@@ -77,7 +77,6 @@ class linkResource(Resource):
     def post(self): # 创建课程，进行一系列的绑定
         data=request.get_json()
         user_id=data.get('id') # 获取用户id，与课程老师表关联
-        print(user_id)
         usertype=data.get('usertype') # 督导队or老师
         if usertype: # 老师的用户类型为0，如果if条件成立，说明不是老师
             user_id=None
@@ -88,13 +87,12 @@ class linkResource(Resource):
         jsonData = data.get('jsonData')
         # print(type(jsonData)) # <class 'str'>
         data=json.loads(jsonData)
-        print(data)
         course=data.get('课程名称')
         teacher=data.get('任课教师')
         stu_roster=data.get('学生名单')
         
         # 先查询是否已经存在匹配的排课项
-        schedule = Scheduling.query.join(CourseTeacher, TimePlace).filter(
+        schedule = Scheduling.query.join(CourseTeacher).join(TimePlace).filter(
             CourseTeacher.course == course,
             CourseTeacher.teacher == teacher,
             TimePlace.building == building,
