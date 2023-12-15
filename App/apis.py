@@ -76,12 +76,10 @@ class linkResource(Resource):
 
     def post(self): # 创建课程，进行一系列的绑定
         data=request.get_json()
-        # print(data)
-        # # print(type(data)) # <class 'dict'>
         user_id=data.get('id') # 获取用户id，与课程老师表关联
         print(user_id)
         usertype=data.get('usertype') # 督导队or老师
-        if usertype:
+        if usertype: # 老师的用户类型为0，如果if条件成立，说明不是老师
             user_id=None
         building=data.get('building') # 教学楼,eg:东三
         week=data.get('time1') # 周几，eg：周五
@@ -94,8 +92,25 @@ class linkResource(Resource):
         course=data.get('课程名称')
         teacher=data.get('任课教师')
         stu_roster=data.get('学生名单')
-        print(course)
-        print(teacher)
+        
+        # 先查询是否已经存在匹配的排课项
+        schedule = Scheduling.query.join(CourseTeacher, TimePlace).filter(
+            CourseTeacher.course == course,
+            CourseTeacher.teacher == teacher,
+            TimePlace.building == building,
+            TimePlace.classroom == classroom,
+            TimePlace.week_name == week,
+            TimePlace.time_period == time_period
+        ).first()
+        if schedule: # 如果排课表有此信息，说明课程已经存在
+            ct=CourseTeacher.query.filter_by(id=schedule.course_teacher_id).first() # 找到已存在的课程
+            if user_id and ct.user_id==None: # 如果是老师打算创建已存在的课程(且该课程是督导队创建的，即user_id为空)
+                ct.user_id=user_id
+                db.session.commit()
+                return {'msg':'课程被督导队创建,现在已经找回'}
+            else: # 如果是督导队，无需做任何操作
+                return {'msg':'课程已经存在'}
+
         new_ct=CourseTeacher(teacher=teacher,course=course,user_id=user_id) # 创建课程教师对象
         new_tp=TimePlace(building=building,classroom=classroom,week_name=week,time_period=time_period) # 创建时间地点对象
         db.session.add(new_ct)
@@ -127,7 +142,7 @@ class linkResource(Resource):
                 db.session.add(new_ct_s)
                 db.session.commit()
         
-        return {'course_id':ct_id,'msg':'课程创建成功'}
+        return {'msg':'课程创建成功'}
 
         
 class rosterForTeacher(Resource):
@@ -153,43 +168,51 @@ class rosterForTeacher(Resource):
         msg=list()
         flag=True
 
-        for leave in leave_list:
-            leave_stu_no=leave.get('学号')
-            student=Student.query.filter_by(stu_no=leave_stu_no).first() # 找到该名学生
-            if student:
-                new_lea_msg=Leave_msg(leave_date=date,student_id=student.id,course_id=ct_id) # 将请假消息添加到数据库中
-                db.session.add(new_lea_msg)
-                db.session.commit()
-            else:
-                msg.append('学号为'+leave_stu_no+'的学生不存在')
-
-        usertype=data.get('usertype') # int型，0是教师
-        for stu in stu_list:
-            stu_no=stu.get('学号')
-            student=Student.query.filter_by(stu_no=stu_no).first() # 找到该名学生
-            if student:
-                if not usertype: # 如果用户类型是老师
-                    stu_id=student.id # 获取学生id
-                    ct_stu=CourseTeacher_Student.query.filter_by(course_teacher_id=ct_id,student_id=stu_id).first()
-                    if ct_stu:
-                        ct_stu.absence_count+=1 # 该名学生本课程缺勤次数加1
-                        new_ad=Absence_Details(Specific_dates=date,ct_s_id=ct_stu.id) # 在缺勤详情表添加一条数据，记录每次缺勤的日期
-                        db.session.add(new_ad)
-                        db.session.commit()
-                    else:
-                        msg.append('学号为'+stu_no+'的学生不在该课程中')
-                        flag=False
-                else: # 类型不是老师，就是督导队
-                    stu_id=student.id
-                    student.Absence+=1 # 缺勤次数加1
-                    new_stu_absence=StudentAbsences(ab_date=date,student_id=stu_id,course_id=ct_id,place=place,ab_time=ab_time)
-                    db.session.add(new_stu_absence)
+        if not leave_list and not stu_list:
+            return {'msg':'无学生请假和缺勤'}
+        
+        if not leave_list:
+            msg.append('无学生请假')
+        else:
+            for leave in leave_list:
+                leave_stu_no=leave.get('学号')
+                student=Student.query.filter_by(stu_no=leave_stu_no).first() # 找到该名学生
+                if student:
+                    new_lea_msg=Leave_msg(leave_date=date,student_id=student.id,course_id=ct_id) # 将请假消息添加到数据库中
+                    db.session.add(new_lea_msg)
                     db.session.commit()
-            else:
-                msg.append('学号为'+stu_no+'的学生不存在')
-                flag=False
-        if flag:
-            return {'msg':'缺勤信息已经成功导入'}
+                else:
+                    msg.append('学号为'+leave_stu_no+'的学生不存在')
+        if not stu_list:
+            msg.append('无学生缺勤')
+        else:    
+            usertype=data.get('usertype') # int型，0是教师
+            for stu in stu_list:
+                stu_no=stu.get('学号')
+                student=Student.query.filter_by(stu_no=stu_no).first() # 找到该名学生
+                if student:
+                    if not usertype: # 如果用户类型是老师
+                        stu_id=student.id # 获取学生id
+                        ct_stu=CourseTeacher_Student.query.filter_by(course_teacher_id=ct_id,student_id=stu_id).first()
+                        if ct_stu:
+                            ct_stu.absence_count+=1 # 该名学生本课程缺勤次数加1
+                            new_ad=Absence_Details(Specific_dates=date,ct_s_id=ct_stu.id) # 在缺勤详情表添加一条数据，记录每次缺勤的日期
+                            db.session.add(new_ad)
+                            db.session.commit()
+                        else:
+                            msg.append('学号为'+stu_no+'的学生不在该课程中')
+                            flag=False
+                    else: # 类型不是老师，就是督导队
+                        stu_id=student.id
+                        student.Absence+=1 # 缺勤次数加1
+                        new_stu_absence=StudentAbsences(ab_date=date,student_id=stu_id,course_id=ct_id,place=place,ab_time=ab_time)
+                        db.session.add(new_stu_absence)
+                        db.session.commit()
+                else:
+                    msg.append('学号为'+stu_no+'的学生不存在')
+                    flag=False
+            if flag:
+                msg.append('缺勤信息导入成功')
         return {'msg':msg}
 
 
