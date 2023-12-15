@@ -50,7 +50,7 @@ class User(db.Model):
 class Grade(db.Model):
     __tablename__ = 'grade'
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    name = db.Column(db.String(30),unique=True)
+    name = db.Column(db.String(30))
     admission_year=db.Column(db.String(11),nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     students = db.relationship('Student', backref='grade', lazy=True)
