@@ -216,6 +216,9 @@ class renderMineCourse(Resource):
         informations=list() # 存储课程相关信息，例如：课程名，上课的时间和地点
         for ct in cts:
             tp_id=Scheduling.query.filter_by(course_teacher_id=ct.id).first().time_place_id
+            if not tp_id:
+                informations.append(f'{ct.course}找不到相关的排课信息')
+                continue
             tp=TimePlace.query.filter_by(id=tp_id).first()
             information={'course_id':ct.id,'course':ct.course,'building':tp.building,'classroom':tp.classroom,'week':tp.week_name,'time_period':tp.time_period}
             informations.append(information)

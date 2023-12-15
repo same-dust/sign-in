@@ -23,7 +23,7 @@ class StudentAbsences(db.Model):
 
 class CourseTeacher_Student(db.Model):
     __tablename__ = 'courseteacher_student'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     absence_count = db.Column(db.Integer,default=0)
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
     course_teacher_id = db.Column(db.Integer, db.ForeignKey('courseteacher.id'))
