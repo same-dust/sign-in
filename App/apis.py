@@ -312,9 +312,12 @@ class TodayAbsencePush(Resource):
         for grade in grades:
             grades_id.append(grade.id)
         student_absences=Student_Absences.query.filter_by(ab_date=today_date).all() # 获取今天所有的缺勤名单
+        print(student_absences)
         print(grades_id)
         for absence in student_absences:
+            print(f'the student id of absence:{absence.student_id}')
             student=Student.query.filter_by(id=absence.student_id).first()
+            print(f'student:{student},grade_id:{student.grade_id}')
             if student:
                 if student.grade_id in grades_id:
                     print(student.name,student.stu_no)
