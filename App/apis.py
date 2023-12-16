@@ -162,6 +162,8 @@ class rosterForTeacher(Resource):
         date=data.get('date') # 获取当前日期:yyyy-mm-dd 格式
         place=data.get('place') # 缺勤地点：东三305
         ab_time=data.get('time') # 缺勤时间：周五三四节
+        usertype=data.get('usertype') # int型，0是教师
+        print(f'usertype:{usertype}')
 
         msg=list()
         flag=True
@@ -183,8 +185,7 @@ class rosterForTeacher(Resource):
                     msg.append('学号为'+leave_stu_no+'的学生不存在')
         if not stu_list:
             msg.append('无学生缺勤')
-        else:    
-            usertype=data.get('usertype') # int型，0是教师
+        else:            
             for stu in stu_list:
                 stu_no=stu.get('学号')
                 student=Student.query.filter_by(stu_no=stu_no).first() # 找到该名学生
@@ -203,7 +204,7 @@ class rosterForTeacher(Resource):
                     else: # 类型不是老师，就是督导队
                         stu_id=student.id
                         student.Absence+=1 # 缺勤次数加1
-                        new_stu_absence=StudentAbsences(ab_date=date,student_id=stu_id,course_id=ct_id,place=place,ab_time=ab_time)
+                        new_stu_absence=Student_Absences(ab_date=date,student_id=stu_id,course_id=ct_id,place=place,ab_time=ab_time)
                         db.session.add(new_stu_absence)
                         db.session.commit()
                 else:
@@ -310,7 +311,8 @@ class TodayAbsencePush(Resource):
         today_absence=list() # 用来存储今日缺勤
         for grade in grades:
             grades_id.append(grade.id)
-        student_absences=StudentAbsences.query.filter_by(ab_date=today_date).all() # 获取今天所有的缺勤名单
+        student_absences=Student_Absences.query.filter_by(ab_date=today_date).all() # 获取今天所有的缺勤名单
+        print(grades_id)
         for absence in student_absences:
             student=Student.query.filter_by(id=absence.student_id).first()
             if student:
@@ -329,7 +331,7 @@ class GradeAbsences(Resource):
             if not student.Absence:
                 continue
             absence_detail=list()
-            student_absences=StudentAbsences.query.filter_by(student_id=student.id).all()
+            student_absences=Student_Absences.query.filter_by(student_id=student.id).all()
             for absence in student_absences:
                 ct=CourseTeacher.query.filter_by(id=absence.course_id).first()
                 absence_detail.append({'date':absence.ab_date,'course':ct.course,'place':absence.place})

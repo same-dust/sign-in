@@ -8,7 +8,7 @@ class Absence_Details(db.Model):
     ct_s_id = db.Column(db.Integer, db.ForeignKey('courseteacher_student.id'), nullable=False, comment='外键,关联学生选课表的id')
 
 
-class StudentAbsences(db.Model):
+class Student_Absences(db.Model):
     __tablename__ = 'student_absences'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='Primary Key')
     ab_date = db.Column(db.String(20), nullable=False, comment='缺勤日期')
