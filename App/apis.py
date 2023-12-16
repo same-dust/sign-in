@@ -311,6 +311,7 @@ class TodayAbsencePush(Resource):
         today_absence=list() # 用来存储今日缺勤
         for grade in grades:
             grades_id.append(grade.id)
+        print(f'today_date:{today_date}')
         student_absences=Student_Absences.query.filter_by(ab_date=today_date).all() # 获取今天所有的缺勤名单
         print(student_absences)
         print(grades_id)
