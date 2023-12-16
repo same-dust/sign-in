@@ -317,6 +317,7 @@ class TodayAbsencePush(Resource):
             student=Student.query.filter_by(id=absence.student_id).first()
             if student:
                 if student.grade_id in grades_id:
+                    print(student.name,student.stu_no)
                     ct=CourseTeacher.query.filter_by(id=absence.course_id).first() # 获取课程信息
                     today_absence.append({'student_name':student.name,'student_no':student.stu_no,'date':absence.ab_date,'teacher':ct.teacher,'course':ct.course,'place':absence.place,'detail_time':absence.ab_time})
         return {'status':'success','today_absence':today_absence}
