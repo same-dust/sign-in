@@ -292,7 +292,7 @@ class leaveResource(Resource):
             student=Student.query.filter_by(id=msg.student_id).first() # 找到该名学生
             ct=CourseTeacher.query.filter_by(id=msg.course_id).first() # 在哪个课程上请假
             if student and ct: # 都不为空
-                ct_s=CourseTeacher_Student.query.filter_by(course_id=ct.id,student_id=student.id).first()
+                ct_s=CourseTeacher_Student.query.filter_by(course_teacher_id=ct.id,student_id=student.id).first()
                 ct_s.absence_count+=1
                 new_ad=Absence_Details(Specific_dates=msg.leave_date,ct_s_id=ct_s.id) # 在缺勤详情表添加一条数据，记录每次缺勤的日期
                 db.session.add(new_ad)
